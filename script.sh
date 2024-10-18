@@ -5,7 +5,6 @@ NC='\033[0m'
 
 echo  "This is gcloud authentication with service account. Provide path to your gcloud .json key file..."
 
-
 while true; do
  read -p "Enter gcloud .json key file for service account: " key
  if [[ $key == *.json ]]; then
@@ -69,17 +68,68 @@ do
     echo -e "${RED}[ERROR]${NC} A project with a ${projectID} does not exist within your organization or you don't have access to it."
   fi
 done
+
+
+#Roles within a project enumeration
 echo -e "${YELLOW}All the roles within a project:${NC}"
 echo -e "${GREEN} $( gcloud projects get-iam-policy myprojectmika | grep role | awk ' {print $2}' ) ${NC}"
 
+
+
+
+echo -e "${GREEN}########################################################################################################################${NC}"
+echo -e "${YELLOW}Predefined roles analysis${NC}"
+#touch predefined_roles.yaml
+
+predefined_roles=()
+i=0
+roles=$( gcloud projects get-iam-policy myprojectmika | grep role | awk ' {print $2}' )
+
+for role in $roles
+do
+   predefined_roles[i]=$role
+   echo -e "${YELLOW}${predefined_roles[i]}${NC}"
+ #  echo "                                       "
+   echo -e "${GREEN} $( gcloud iam roles describe ${predefined_roles[i]} )${NC}"
+   (( i=i+1 ))
+done
+
+echo -e "${GREEN}########################################################################################################################${NC}"
+echo -e "${YELLOW}Custom roles analysis${NC}"
+echo -e "${GREEN} $( gcloud iam roles list --project=$projectID )${NC}"
+
+
+echo -e "${GREEN}########################################################################################################################${NC}"
+echo -e "${YELLOW}Users analysis${NC}"
+echo -e "${GREEN} $(  gcloud asset search-all-iam-policies --scope=projects/$projectID | grep "user:" )${NC}"
+
+
+echo -e "${GREEN}########################################################################################################################${NC}"
+echo -e "${YELLOW}Service accounts analysis${NC}"
+#echo -e "${GREEN} $(  gcloud asset search-all-iam-policies --scope=projects/$projectID | grep "gserviceaccount" )${NC}"
+echo -e "${GREEN} $(  gcloud iam service-accounts list --project=$projectID )${NC}"
+echo -e "${YELLOW}Roles associated with a single account.${NC}"
+
+for sa in $( gcloud iam service-accounts list --project=$projectID --format="value(email)" );
+do
+  echo -e "${YELLOW} $sa ${NC}"
+  echo -e "${GREEN} $( gcloud iam service-accounts describe $sa --project=$projectID) ${NC}"
+done
+
+#while true; 
+# do
+#  read -p "Enter an email of a user whose roles you want to see: " email
+#  if  gcloud asset analyze-iam-policy --project=$projectID --identity=user:$email &> /dev/null;
+#  then
+#   echo -e "${GREEN} $( gcloud asset analyze-iam-policy --project=$projectID --identity=user:$email )${NC}"
+#   break;
+#  else
+#   echo -e "${RED}Error: Please enter a valid user email. Your user is not existing in this project.${NC}"
+#  fi
+# done
 }
 
-
-
-
-
 #main menu
-
 echo -e "${YELLOW}Pick a service from a menue:${NC}"
 echo "1) VM Analysis"
 echo "2) IAM Analysis"
@@ -90,10 +140,3 @@ case $pick in
     2) iam_analysis ;;
     *) echo "Not invented yet." ;;
 esac
-
-
-
-
-
-
-
